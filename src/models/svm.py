@@ -1,3 +1,4 @@
+import joblib
 import numpy as np
 
 from sklearn.calibration import CalibratedClassifierCV
@@ -80,3 +81,26 @@ class TfidfSVMModel:
         spam_probabilities = probabilities[:, 1]
 
         return spam_probabilities
+    
+    def save(self, path):
+        """
+        Save the trained TF-IDF vectorizer and calibrated SVM model.
+        """
+
+        joblib.dump(
+            {
+                "vectorizer": self.vectorizer,
+                "model": self.model,
+            },
+            path,
+        )
+
+    def load(self, path):
+        """
+        Load a previously trained TF-IDF vectorizer and calibrated SVM model.
+        """
+
+        saved_objects = joblib.load(path)
+
+        self.vectorizer = saved_objects["vectorizer"]
+        self.model = saved_objects["model"]

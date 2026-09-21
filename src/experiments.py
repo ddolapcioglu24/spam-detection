@@ -116,22 +116,15 @@ def set_random_seed(seed=RANDOM_SEED):
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-def evaluate_model(
+def evaluate_trained_model(
     model,
-    train_df,
     test_df,
     decision_threshold=DECISION_THRESHOLD,
     target_recall=TARGET_RECALL,
 ):
     """
-    Train and evaluate one model on a given train/test split.
+    Evaluate an already trained model on a test dataset.
     """
-
-    # Train the model on the training messages.
-    model.fit(
-        train_df["text"].tolist(),
-        train_df["label"].tolist(),
-    )
 
     # Convert test labels to binary values: ham=0, spam=1.
     y_true = (
@@ -163,3 +156,27 @@ def evaluate_model(
 
     return results
 
+def evaluate_model(
+    model,
+    train_df,
+    test_df,
+    decision_threshold=DECISION_THRESHOLD,
+    target_recall=TARGET_RECALL,
+):
+    """
+    Train and evaluate one model on a given train/test split.
+    """
+
+    # Train the model on the training messages.
+    model.fit(
+        train_df["text"].tolist(),
+        train_df["label"].tolist(),
+    )
+
+    # Evaluate the trained model on the test set.
+    return evaluate_trained_model(
+        model,
+        test_df,
+        decision_threshold=decision_threshold,
+        target_recall=target_recall,
+    )

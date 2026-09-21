@@ -230,3 +230,29 @@ class TransformerSpamModel:
 
         # Combine predictions from all batches into one array.
         return np.concatenate(all_probabilities)
+    
+    def save(self, path):
+        """
+        Save the fine-tuned transformer model and tokenizer.
+        """
+
+        # Save the tokenizer and fine-tuned model to the same directory.
+        self.tokenizer.save_pretrained(path)
+        self.model.save_pretrained(path)
+
+    def load(self, path):
+        """
+        Load a previously fine-tuned transformer model and tokenizer.
+        """
+
+        # Load the tokenizer and fine-tuned model from disk.
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            path
+        )
+
+        self.model = AutoModelForSequenceClassification.from_pretrained(
+            path
+        )
+
+        # Move the loaded model to the selected computation device.
+        self.model.to(self.device)

@@ -109,3 +109,20 @@ class FastTextModel:
             )
 
         return np.array(spam_probabilities)
+    
+    def save(self, path):
+        """
+        Save the trained fastText model.
+        """
+        if self.model is None:
+            raise RuntimeError(
+                "The model must be trained before saving."
+            )
+
+        self.model.save_model(path)
+
+    def load(self, path):
+        """
+        Load a previously trained fastText model.
+        """
+        self.model = fasttext.load_model(path)
