@@ -90,13 +90,13 @@ class FastTextModel:
             clean_text = str(text).replace("\n", " ").strip()
 
             labels, probabilities = self.model.predict(
-                clean_text,
+                [clean_text],
                 k=2,
             )
 
             # Find the probability assigned to the spam class.
             label_probabilities = dict(
-                zip(labels, probabilities)
+                zip(labels[0], probabilities[0])
             )
 
             spam_probability = label_probabilities.get(

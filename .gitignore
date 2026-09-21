@@ -14,3 +14,4 @@ __pycache__/
 # Raw datasets and trained model cache
 data/raw/
 cache/
+raw_data.zip
