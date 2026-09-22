@@ -1,6 +1,8 @@
+import os
 import torch
 import random
 import numpy as np
+import pandas as pd
 
 from src.data import normalize_text
 from src.config import (
@@ -179,4 +181,636 @@ def evaluate_model(
         test_df,
         decision_threshold=decision_threshold,
         target_recall=target_recall,
+    )
+
+def create_nested_training_subsets(
+    train_df,
+    training_sizes,
+    random_seed=RANDOM_SEED,
+):
+    """
+    Create reproducible, nested training subsets while preserving
+    the original class distribution as closely as possible.
+    """
+
+    rng = np.random.default_rng(
+        random_seed
+    )
+
+    # Shuffle ham and spam examples independently once.
+    ham_df = train_df[
+        train_df["label"] == "ham"
+    ].copy()
+
+    spam_df = train_df[
+        train_df["label"] == "spam"
+    ].copy()
+
+    ham_order = rng.permutation(
+        len(ham_df)
+    )
+
+    spam_order = rng.permutation(
+        len(spam_df)
+    )
+
+    ham_df = ham_df.iloc[
+        ham_order
+    ].reset_index(drop=True)
+
+    spam_df = spam_df.iloc[
+        spam_order
+    ].reset_index(drop=True)
+
+    spam_ratio = (
+        train_df["label"] == "spam"
+    ).mean()
+
+    subsets = {}
+
+    for training_size in training_sizes:
+        if training_size > len(train_df):
+            raise ValueError(
+                f"Training size {training_size} exceeds "
+                f"the available training set size."
+            )
+
+        # Preserve the training-set class ratio.
+        spam_count = int(
+            round(
+                training_size
+                * spam_ratio
+            )
+        )
+
+        ham_count = (
+            training_size
+            - spam_count
+        )
+
+        subset_df = pd.concat(
+            [
+                ham_df.iloc[:ham_count],
+                spam_df.iloc[:spam_count],
+            ],
+            ignore_index=True,
+        )
+
+        # Shuffle the selected examples without changing membership.
+        subset_df = subset_df.sample(
+            frac=1,
+            random_state=random_seed,
+        ).reset_index(drop=True)
+
+        subsets[
+            training_size
+        ] = subset_df
+
+    return subsets
+
+def get_model_checkpoint_path(
+    base_dir,
+    dataset_name,
+    model_name,
+):
+    """
+    Return the checkpoint path for a trained model.
+    """
+
+    dataset_names = {
+        "UCI SMS": "uci_sms",
+        "Turkish SMS": "turkish_sms",
+        "YouTube Spam": "youtube_spam",
+        "Enron Spam": "enron_spam",
+    }
+
+    model_names = {
+        "BERT Base": "bert_base",
+        "DistilBERT": "distilbert",
+        "XLM-RoBERTa": "xlm_roberta",
+        "TF-IDF + SVM": "tfidf_svm",
+        "fastText": "fasttext",
+    }
+
+    dataset_dir = os.path.join(
+        base_dir,
+        dataset_names[dataset_name],
+    )
+
+    os.makedirs(
+        dataset_dir,
+        exist_ok=True,
+    )
+
+    model_key = model_names[model_name]
+
+    if model_name == "TF-IDF + SVM":
+        return os.path.join(
+            dataset_dir,
+            f"{model_key}.joblib",
+        )
+
+    if model_name == "fastText":
+        return os.path.join(
+            dataset_dir,
+            f"{model_key}.bin",
+        )
+
+    # Transformer checkpoints are stored as directories.
+    return os.path.join(
+        dataset_dir,
+        model_key,
+    )
+
+def run_same_dataset_experiment(
+    dataset_splits,
+    model_classes,
+    results_path,
+    model_dir,
+):
+    """
+    Run same-dataset training and evaluation for all models.
+
+    Parameters
+    ----------
+    dataset_splits : dict
+        Mapping from dataset name to (train_df, test_df).
+    model_classes : dict
+        Mapping from model name to model class.
+    results_path : str
+        Path where experiment results are saved as CSV.
+    model_dir : str
+        Directory where trained model checkpoints are saved.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Results for all completed runs.
+    """
+
+    os.makedirs(
+        os.path.dirname(results_path),
+        exist_ok=True,
+    )
+
+    os.makedirs(
+        model_dir,
+        exist_ok=True,
+    )
+
+    # Load previously completed results if available.
+    if os.path.exists(results_path):
+        results = (
+            pd.read_csv(results_path)
+            .to_dict("records")
+        )
+    else:
+        results = []
+
+    completed_runs = set()
+
+    # A run is complete only if both its result and model exist.
+    for result in results:
+        checkpoint_path = get_model_checkpoint_path(
+            model_dir,
+            result["dataset"],
+            result["model"],
+        )
+
+        if os.path.exists(checkpoint_path):
+            completed_runs.add(
+                (
+                    result["dataset"],
+                    result["model"],
+                )
+            )
+
+    total_runs = (
+        len(dataset_splits)
+        * len(model_classes)
+    )
+
+    print(
+        f"Completed runs: "
+        f"{len(completed_runs)}/{total_runs}"
+    )
+
+    for dataset_name, (
+        train_df,
+        test_df,
+    ) in dataset_splits.items():
+
+        for model_name, model_class in model_classes.items():
+
+            run_key = (
+                dataset_name,
+                model_name,
+            )
+
+            if run_key in completed_runs:
+                print(
+                    f"Skipping {dataset_name} | "
+                    f"{model_name} "
+                    f"(already completed)"
+                )
+                continue
+
+            print(
+                f"Running {model_name} "
+                f"on {dataset_name}..."
+            )
+
+            set_random_seed()
+
+            model = model_class()
+
+            evaluation = evaluate_model(
+                model,
+                train_df,
+                test_df,
+            )
+
+            checkpoint_path = get_model_checkpoint_path(
+                model_dir,
+                dataset_name,
+                model_name,
+            )
+
+            model.save(
+                checkpoint_path
+            )
+
+            # Remove an incomplete older result for the same run.
+            results = [
+                result
+                for result in results
+                if not (
+                    result["dataset"] == dataset_name
+                    and result["model"] == model_name
+                )
+            ]
+
+            results.append(
+                {
+                    "dataset": dataset_name,
+                    "model": model_name,
+                    **evaluation,
+                }
+            )
+
+            # Save immediately after every completed run.
+            pd.DataFrame(
+                results
+            ).to_csv(
+                results_path,
+                index=False,
+            )
+
+            completed_runs.add(
+                run_key
+            )
+
+            print(
+                f"Saved {dataset_name} | "
+                f"{model_name}"
+            )
+
+            del model
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
+                torch.mps.empty_cache()
+
+    return pd.DataFrame(
+        results
+    )
+
+def run_transfer_experiment(
+    dataset_splits,
+    model_classes,
+    results_path,
+    model_dir,
+):
+    """
+    Evaluate trained models across different datasets without retraining.
+
+    Parameters
+    ----------
+    dataset_splits : dict
+        Mapping from dataset name to (train_df, test_df).
+    model_classes : dict
+        Mapping from model name to model class.
+    results_path : str
+        Path where experiment results are saved as CSV.
+    model_dir : str
+        Directory containing Experiment 1 model checkpoints.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Results for all completed transfer evaluations.
+    """
+
+    os.makedirs(
+        os.path.dirname(results_path),
+        exist_ok=True,
+    )
+
+    # Load previously completed results if available.
+    if os.path.exists(results_path):
+        results = (
+            pd.read_csv(results_path)
+            .to_dict("records")
+        )
+    else:
+        results = []
+
+    completed_runs = {
+        (
+            result["source_dataset"],
+            result["target_dataset"],
+            result["model"],
+        )
+        for result in results
+    }
+
+    total_runs = (
+        len(dataset_splits)
+        * (len(dataset_splits) - 1)
+        * len(model_classes)
+    )
+
+    print(
+        f"Completed transfer runs: "
+        f"{len(completed_runs)}/{total_runs}"
+    )
+
+    for source_dataset in dataset_splits:
+        for model_name, model_class in model_classes.items():
+
+            # Find target datasets that still need evaluation.
+            remaining_targets = [
+                target_dataset
+                for target_dataset in dataset_splits
+                if (
+                    target_dataset != source_dataset
+                    and (
+                        source_dataset,
+                        target_dataset,
+                        model_name,
+                    )
+                    not in completed_runs
+                )
+            ]
+
+            if not remaining_targets:
+                continue
+
+            checkpoint_path = get_model_checkpoint_path(
+                model_dir,
+                source_dataset,
+                model_name,
+            )
+
+            if not os.path.exists(checkpoint_path):
+                raise FileNotFoundError(
+                    f"Missing checkpoint for "
+                    f"{source_dataset} | {model_name}: "
+                    f"{checkpoint_path}"
+                )
+
+            print(
+                f"Loading {model_name} trained on "
+                f"{source_dataset}..."
+            )
+
+            model = model_class()
+            model.load(
+                checkpoint_path
+            )
+
+            for target_dataset in remaining_targets:
+                _, target_test_df = (
+                    dataset_splits[
+                        target_dataset
+                    ]
+                )
+
+                print(
+                    f"Evaluating {source_dataset} -> "
+                    f"{target_dataset} | {model_name}"
+                )
+
+                evaluation = evaluate_trained_model(
+                    model,
+                    target_test_df,
+                )
+
+                results.append(
+                    {
+                        "source_dataset": source_dataset,
+                        "target_dataset": target_dataset,
+                        "model": model_name,
+                        **evaluation,
+                    }
+                )
+
+                # Save immediately after every evaluation.
+                pd.DataFrame(
+                    results
+                ).to_csv(
+                    results_path,
+                    index=False,
+                )
+
+                completed_runs.add(
+                    (
+                        source_dataset,
+                        target_dataset,
+                        model_name,
+                    )
+                )
+
+            del model
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
+                torch.mps.empty_cache()
+
+    return pd.DataFrame(
+        results
+    )
+
+def run_training_size_experiment(
+    train_df,
+    test_df,
+    model_classes,
+    training_sizes,
+    results_path,
+    dataset_name,
+):
+    """
+    Evaluate model accuracy at different labelled training-set sizes.
+
+    Parameters
+    ----------
+    train_df : pandas.DataFrame
+        Full training split used to create smaller subsets.
+    test_df : pandas.DataFrame
+        Fixed held-out test split used for every run.
+    model_classes : dict
+        Mapping from model name to model class.
+    training_sizes : list
+        Training-set sizes to evaluate.
+    results_path : str
+        Path where experiment results are saved as CSV.
+    dataset_name : str
+        Name of the dataset used for the experiment.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Accuracy results for all completed runs.
+    """
+
+    os.makedirs(
+        os.path.dirname(results_path),
+        exist_ok=True,
+    )
+
+    training_subsets = create_nested_training_subsets(
+        train_df,
+        training_sizes,
+    )
+
+    # Load previously completed results if available.
+    if os.path.exists(results_path):
+        results = (
+            pd.read_csv(results_path)
+            .to_dict("records")
+        )
+    else:
+        results = []
+
+    completed_runs = {
+        (
+            result["model"],
+            int(result["training_size"]),
+        )
+        for result in results
+    }
+
+    total_runs = (
+        len(model_classes)
+        * len(training_sizes)
+    )
+
+    print(
+        f"Completed Experiment 3 runs: "
+        f"{len(completed_runs)}/{total_runs}"
+    )
+
+    y_true = (
+        test_df["label"] == "spam"
+    ).astype(int).to_numpy()
+
+    for model_name, model_class in model_classes.items():
+        for training_size in training_sizes:
+
+            run_key = (
+                model_name,
+                training_size,
+            )
+
+            if run_key in completed_runs:
+                print(
+                    f"Skipping {model_name} with "
+                    f"{training_size} examples "
+                    f"(already completed)"
+                )
+                continue
+
+            print(
+                f"Running {model_name} with "
+                f"{training_size} training examples..."
+            )
+
+            train_subset = (
+                training_subsets[
+                    training_size
+                ]
+            )
+
+            set_random_seed()
+
+            model = model_class()
+
+            model.fit(
+                train_subset["text"].tolist(),
+                train_subset["label"].tolist(),
+            )
+
+            y_score = model.predict_proba(
+                test_df["text"].tolist()
+            )
+
+            y_pred = (
+                y_score
+                >= DECISION_THRESHOLD
+            ).astype(int)
+
+            accuracy = np.mean(
+                y_true == y_pred
+            )
+
+            results.append(
+                {
+                    "dataset": dataset_name,
+                    "model": model_name,
+                    "training_size": training_size,
+                    "accuracy": accuracy,
+                }
+            )
+
+            # Save immediately after every completed run.
+            pd.DataFrame(
+                results
+            ).to_csv(
+                results_path,
+                index=False,
+            )
+
+            completed_runs.add(
+                run_key
+            )
+
+            print(
+                f"Saved {model_name} | "
+                f"{training_size} examples | "
+                f"accuracy={accuracy:.4f}"
+            )
+
+            del model
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
+                torch.mps.empty_cache()
+
+    return pd.DataFrame(
+        results
     )
