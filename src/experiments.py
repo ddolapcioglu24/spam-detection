@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import random
 import numpy as np
@@ -1026,3 +1027,318 @@ def run_realistic_balance_experiment(
     return pd.DataFrame(
         results
     )
+
+def get_checkpoint_size_bytes(checkpoint_path):
+    """
+    Return the total size of a model checkpoint in bytes.
+    """
+
+    if not os.path.exists(checkpoint_path):
+        raise FileNotFoundError(
+            f"Checkpoint not found: {checkpoint_path}"
+        )
+
+    # Single-file checkpoints are used by SVM and fastText.
+    if os.path.isfile(checkpoint_path):
+        return os.path.getsize(
+            checkpoint_path
+        )
+
+    total_size = 0
+
+    # Transformer checkpoints are stored as directories.
+    for root, _, files in os.walk(checkpoint_path):
+        for file_name in files:
+            file_path = os.path.join(
+                root,
+                file_name,
+            )
+
+            total_size += os.path.getsize(
+                file_path
+            )
+
+    return total_size
+
+
+def move_model_to_cpu(model):
+    """
+    Move a loaded model to CPU when the model uses a PyTorch device.
+    """
+
+    cpu_device = torch.device("cpu")
+
+    # Transformer wrappers store the selected device here.
+    if hasattr(model, "device"):
+        model.device = cpu_device
+
+    # Move the underlying PyTorch model itself to CPU.
+    if (
+        hasattr(model, "model")
+        and hasattr(model.model, "to")
+    ):
+        model.model.to(cpu_device)
+
+    return model
+
+
+def run_speed_size_experiment(
+    benchmark_df,
+    model_classes,
+    results_path,
+    model_dir,
+    dataset_name,
+    num_messages=1000,
+    warmup_size=20,
+    num_runs=5,
+):
+    """
+    Measure CPU inference throughput and checkpoint size for each model.
+
+    Parameters
+    ----------
+    benchmark_df : pandas.DataFrame
+        Dataset containing messages used for the throughput benchmark.
+    model_classes : dict
+        Mapping from model name to model class.
+    results_path : str
+        Path where Experiment 5 results are saved as CSV.
+    model_dir : str
+        Directory containing Experiment 1 model checkpoints.
+    dataset_name : str
+        Dataset whose trained checkpoints are benchmarked.
+    num_messages : int, optional
+        Number of messages used in each timed run.
+    warmup_size : int, optional
+        Number of messages used before timing begins.
+    num_runs : int, optional
+        Number of timed runs used to compute median throughput.
+
+    Returns
+    -------
+    pandas.DataFrame
+        CPU throughput and model-size results.
+    """
+
+    if num_messages < 1000:
+        raise ValueError(
+            "Experiment 5 requires at least 1000 benchmark messages."
+        )
+
+    if len(benchmark_df) < num_messages:
+        raise ValueError(
+            f"Benchmark dataset contains only {len(benchmark_df)} "
+            f"messages, but {num_messages} were requested."
+        )
+
+    if warmup_size < 1:
+        raise ValueError(
+            "warmup_size must be at least 1."
+        )
+
+    if num_runs < 1:
+        raise ValueError(
+            "num_runs must be at least 1."
+        )
+
+    os.makedirs(
+        os.path.dirname(results_path),
+        exist_ok=True,
+    )
+
+    benchmark_texts = (
+        benchmark_df["text"]
+        .iloc[:num_messages]
+        .tolist()
+    )
+
+    warmup_texts = benchmark_texts[
+        :min(warmup_size, num_messages)
+    ]
+
+    # Load previously completed results if available.
+    if os.path.exists(results_path):
+        results = (
+            pd.read_csv(results_path)
+            .to_dict("records")
+        )
+    else:
+        results = []
+
+    completed_runs = {
+        (
+            result["dataset"],
+            result["model"],
+            int(result["num_messages"]),
+            int(result["num_runs"]),
+        )
+        for result in results
+    }
+
+    total_runs = len(model_classes)
+
+    print(
+        f"Completed Experiment 5 runs: "
+        f"{len(completed_runs)}/{total_runs}"
+    )
+
+    for model_name, model_class in model_classes.items():
+
+        run_key = (
+            dataset_name,
+            model_name,
+            num_messages,
+            num_runs,
+        )
+
+        if run_key in completed_runs:
+            print(
+                f"Skipping {model_name} "
+                f"(already completed)"
+            )
+            continue
+
+        checkpoint_path = get_model_checkpoint_path(
+            model_dir,
+            dataset_name,
+            model_name,
+        )
+
+        if not os.path.exists(checkpoint_path):
+            raise FileNotFoundError(
+                f"Missing checkpoint for "
+                f"{dataset_name} | {model_name}: "
+                f"{checkpoint_path}"
+            )
+
+        print(
+            f"Benchmarking {model_name} on CPU..."
+        )
+
+        # Load the trained Experiment 1 checkpoint.
+        model = model_class()
+        model.load(
+            checkpoint_path
+        )
+
+        # Force transformer inference onto CPU.
+        model = move_model_to_cpu(
+            model
+        )
+
+        # Warm up the model before timing.
+        model.predict_proba(
+            warmup_texts
+        )
+
+        throughputs = []
+
+        # Measure throughput several times using the same message batch.
+        for _ in range(num_runs):
+            start_time = time.perf_counter()
+
+            model.predict_proba(
+                benchmark_texts
+            )
+
+            elapsed_time = (
+                time.perf_counter()
+                - start_time
+            )
+
+            throughputs.append(
+                num_messages / elapsed_time
+            )
+
+        median_throughput = float(
+            np.median(throughputs)
+        )
+
+        checkpoint_size_bytes = (
+            get_checkpoint_size_bytes(
+                checkpoint_path
+            )
+        )
+
+        model_size_mb = (
+            checkpoint_size_bytes
+            / (1024 ** 2)
+        )
+
+        results.append(
+            {
+                "dataset": dataset_name,
+                "model": model_name,
+                "num_messages": num_messages,
+                "num_runs": num_runs,
+                "messages_per_second": median_throughput,
+                "model_size_mb": model_size_mb,
+            }
+        )
+
+        # Save immediately after every completed benchmark.
+        pd.DataFrame(
+            results
+        ).to_csv(
+            results_path,
+            index=False,
+        )
+
+        completed_runs.add(
+            run_key
+        )
+
+        print(
+            f"Saved {model_name} | "
+            f"{median_throughput:.2f} messages/sec | "
+            f"{model_size_mb:.2f} MB"
+        )
+
+        del model
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    return pd.DataFrame(
+        results
+    )
+
+def get_model_predictions(
+    model,
+    test_df,
+    decision_threshold=DECISION_THRESHOLD,
+):
+    """
+    Generate labels, spam scores, and hard predictions for a test set.
+
+    Parameters
+    ----------
+    model
+        Trained spam detection model.
+    test_df : pandas.DataFrame
+        Test set containing ``text`` and ``label`` columns.
+    decision_threshold : float, optional
+        Threshold used to convert spam scores into class predictions.
+
+    Returns
+    -------
+    tuple
+        Ground-truth labels, spam scores, and predicted labels.
+    """
+
+    # Convert test labels to binary values: ham=0, spam=1.
+    y_true = (
+        test_df["label"] == "spam"
+    ).astype(int).to_numpy()
+
+    # Generate spam probabilities or comparable prediction scores.
+    y_score = model.predict_proba(
+        test_df["text"].tolist()
+    )
+
+    # Convert scores to hard class predictions.
+    y_pred = (
+        y_score >= decision_threshold
+    ).astype(int)
+
+    return y_true, y_score, y_pred
