@@ -814,3 +814,73 @@ def run_training_size_experiment(
     return pd.DataFrame(
         results
     )
+
+def create_realistic_test_set(
+    test_df,
+    target_spam_ratio=0.01,
+    random_seed=RANDOM_SEED,
+):
+    """
+    Create a test set with a target spam ratio by downsampling spam.
+
+    All ham messages are retained, while spam messages are randomly
+    downsampled to approximate the requested class distribution.
+
+    Parameters
+    ----------
+    test_df : pandas.DataFrame
+        Test set containing ``text`` and ``label`` columns.
+    target_spam_ratio : float, optional
+        Desired spam ratio in the resulting test set.
+    random_seed : int, optional
+        Random seed used when sampling spam messages.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Test set with all ham messages and downsampled spam messages.
+    """
+    ham_df = test_df[
+        test_df["label"] == "ham"
+    ]
+
+    spam_df = test_df[
+        test_df["label"] == "spam"
+    ]
+
+    # Compute how many spam messages give approximately the target ratio.
+    target_spam_count = round(
+        (
+            target_spam_ratio
+            * len(ham_df)
+        )
+        / (
+            1.0
+            - target_spam_ratio
+        )
+    )
+
+    # Downsample spam while keeping every ham message.
+    target_spam_count = min(
+        target_spam_count,
+        len(spam_df),
+    )
+
+    sampled_spam_df = spam_df.sample(
+        n=target_spam_count,
+        random_state=random_seed,
+    )
+
+    realistic_test_df = pd.concat(
+        [
+            ham_df,
+            sampled_spam_df,
+        ],
+        ignore_index=True,
+    )
+
+    # Shuffle the final test set reproducibly.
+    return realistic_test_df.sample(
+        frac=1.0,
+        random_state=random_seed,
+    ).reset_index(drop=True)
