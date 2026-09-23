@@ -884,3 +884,145 @@ def create_realistic_test_set(
         frac=1.0,
         random_state=random_seed,
     ).reset_index(drop=True)
+
+def run_realistic_balance_experiment(
+    realistic_test_sets,
+    model_classes,
+    results_path,
+    model_dir,
+):
+    """
+    Evaluate trained models on test sets with realistic spam prevalence.
+
+    Parameters
+    ----------
+    realistic_test_sets : dict
+        Mapping from dataset name to realistic test DataFrame.
+    model_classes : dict
+        Mapping from model name to model class.
+    results_path : str
+        Path where experiment results are saved as CSV.
+    model_dir : str
+        Directory containing Experiment 1 model checkpoints.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Results for all completed realistic-balance evaluations.
+    """
+
+    os.makedirs(
+        os.path.dirname(results_path),
+        exist_ok=True,
+    )
+
+    # Load previously completed results if available.
+    if os.path.exists(results_path):
+        results = (
+            pd.read_csv(results_path)
+            .to_dict("records")
+        )
+    else:
+        results = []
+
+    completed_runs = {
+        (
+            result["dataset"],
+            result["model"],
+        )
+        for result in results
+    }
+
+    total_runs = (
+        len(realistic_test_sets)
+        * len(model_classes)
+    )
+
+    print(
+        f"Completed Experiment 4 runs: "
+        f"{len(completed_runs)}/{total_runs}"
+    )
+
+    for dataset_name, test_df in realistic_test_sets.items():
+        for model_name, model_class in model_classes.items():
+
+            run_key = (
+                dataset_name,
+                model_name,
+            )
+
+            if run_key in completed_runs:
+                print(
+                    f"Skipping {dataset_name} | "
+                    f"{model_name} "
+                    f"(already completed)"
+                )
+                continue
+
+            checkpoint_path = get_model_checkpoint_path(
+                model_dir,
+                dataset_name,
+                model_name,
+            )
+
+            if not os.path.exists(checkpoint_path):
+                raise FileNotFoundError(
+                    f"Missing checkpoint for "
+                    f"{dataset_name} | {model_name}: "
+                    f"{checkpoint_path}"
+                )
+
+            print(
+                f"Evaluating {model_name} "
+                f"on realistic {dataset_name}..."
+            )
+
+            model = model_class()
+            model.load(
+                checkpoint_path
+            )
+
+            evaluation = evaluate_trained_model(
+                model,
+                test_df,
+            )
+
+            results.append(
+                {
+                    "dataset": dataset_name,
+                    "model": model_name,
+                    **evaluation,
+                }
+            )
+
+            # Save immediately after every evaluation.
+            pd.DataFrame(
+                results
+            ).to_csv(
+                results_path,
+                index=False,
+            )
+
+            completed_runs.add(
+                run_key
+            )
+
+            print(
+                f"Saved {dataset_name} | "
+                f"{model_name}"
+            )
+
+            del model
+
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
+            elif (
+                hasattr(torch.backends, "mps")
+                and torch.backends.mps.is_available()
+            ):
+                torch.mps.empty_cache()
+
+    return pd.DataFrame(
+        results
+    )
