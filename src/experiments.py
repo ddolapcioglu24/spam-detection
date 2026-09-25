@@ -5,6 +5,7 @@ import random
 import numpy as np
 import pandas as pd
 
+from src.metrics import precision_recall_curve
 from src.data import normalize_text
 from src.config import (
     RANDOM_SEED,
@@ -1342,3 +1343,51 @@ def get_model_predictions(
     ).astype(int)
 
     return y_true, y_score, y_pred
+
+def get_pr_curves_for_dataset(
+    test_df,
+    model_classes,
+    model_dir,
+    dataset_name,
+):
+    """
+    Generate precision-recall curve data for all models on one dataset.
+    """
+
+    curve_data = {}
+
+    for model_name, model_class in model_classes.items():
+        # Load the trained checkpoint for the selected dataset.
+        checkpoint_path = get_model_checkpoint_path(
+            model_dir,
+            dataset_name,
+            model_name,
+        )
+
+        model = model_class()
+        model.load(checkpoint_path)
+
+        # Generate prediction scores for the fixed test set.
+        y_true, y_score, _ = get_model_predictions(
+            model,
+            test_df,
+        )
+
+        # Compute precision and recall values across thresholds.
+        precisions, recalls = precision_recall_curve(
+            y_true,
+            y_score,
+        )
+
+        curve_data[model_name] = {
+            "precision": precisions,
+            "recall": recalls,
+        }
+
+        # Release the loaded model before moving to the next one.
+        del model
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    return curve_data
