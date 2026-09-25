@@ -1391,3 +1391,62 @@ def get_pr_curves_for_dataset(
             torch.cuda.empty_cache()
 
     return curve_data
+
+def get_confusion_matrix_for_model(
+    test_df,
+    model_class,
+    model_dir,
+    dataset_name,
+    model_name,
+):
+    """
+    Generate a confusion matrix for one trained model on one dataset.
+    """
+
+    # Load the trained checkpoint for the selected dataset.
+    checkpoint_path = get_model_checkpoint_path(
+        model_dir,
+        dataset_name,
+        model_name,
+    )
+
+    model = model_class()
+    model.load(checkpoint_path)
+
+    # Generate true and predicted labels for the fixed test set.
+    y_true, _, y_pred = get_model_predictions(
+        model,
+        test_df,
+    )
+
+    # Count the four possible prediction outcomes.
+    true_negative = np.sum(
+        (y_true == 0) & (y_pred == 0)
+    )
+
+    false_positive = np.sum(
+        (y_true == 0) & (y_pred == 1)
+    )
+
+    false_negative = np.sum(
+        (y_true == 1) & (y_pred == 0)
+    )
+
+    true_positive = np.sum(
+        (y_true == 1) & (y_pred == 1)
+    )
+
+    confusion_matrix = np.array(
+        [
+            [true_negative, false_positive],
+            [false_negative, true_positive],
+        ]
+    )
+
+    # Release the loaded model after prediction.
+    del model
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    return confusion_matrix
