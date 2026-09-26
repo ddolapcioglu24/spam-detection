@@ -1,0 +1,243 @@
+dataset,model,true_label,predicted_label,spam_score,error_type,text
+Enron Spam,TF-IDF + SVM,spam,ham,0.10755644404723945,false_negative,"Subject: re : your details  
+please read the attached file .
+"
+Enron Spam,TF-IDF + SVM,spam,ham,0.23930391865059314,false_negative,"Subject: hi there man - feel the power !  
+"
+UCI SMS,BERT Base,ham,spam,0.9997579455375671,false_positive,MY NO. IN LUTON 0125698789 RING ME IF UR AROUND! H*
+Enron Spam,TF-IDF + SVM,spam,ham,0.0002200101856993093,false_negative,"Subject: nymex invitation - learn power trading  
+power trading
+fundamentals :
+sept 15 - 16 nymex in nyc
+early bird discount now in effect !
+nymex
+power
+delegates will learn :
+electricity
+markets overview
+simulated
+trading exercise
+market
+factors
+basic
+trading tools
+new
+york mercantile exchange
+financial
+instruments options
+real
+options
+role
+of risk management
+identifying
+different types of risk
+position
+analysis
+portfolio
+management
+click
+here to request complete course syllabus
+contractual
+terms , operational terms
+terminology
+trading
+motivations of different physical electricity market participants .
+buy
+low - sell high
+varied
+traded assets
+types
+of electricity transactions
+long - term ,
+medium
+and short - term contracts
+transmission
+services and traded power
+this two - day course provides participants with
+comprehensive training on power trading , deal structuring , credit risk ,
+volatility , risk management , bilateral opportunities and more .
+emi experts instruct using current data ,
+real life examples , and practical experience !
+contact
+emi ( 888 ) 871 - 1207
+click
+here to request more information including syllabus
+hurry class sizes
+are limited !
+click
+here to see other energy training opportunities
+registration
+visit us online
+www . energyinstitution . org
+1369 madison ave , new york , ny 10128
+to unsubscribe to future notices please email unsubscribe @ energyinstitution . org
+"
+Turkish SMS,TF-IDF + SVM,spam,ham,0.49403917722039675,false_negative,İdeal ısı ve enerji tasarrufu onda! Schafer Multicolor Seraşef Prestige  6 Parça Tencere Seti mutfakları şenlendirmeye geliyor! bit.ly/1O2SVXF
+Enron Spam,TF-IDF + SVM,ham,spam,0.9680913759327696,false_positive,"Subject: interesting  
+look what i found at jobsearch . monster . com . i thought this might help
+you with your job searching .
+com & hd = company % 2 emonster % 2 ecom & logo = 1
+comments :
+i thought you might be interested in this .
+"
+Enron Spam,TF-IDF + SVM,ham,spam,0.5655128401302326,false_positive,"Subject: re : billing question  
+thank you for your message . the credit card i want to use is currently stored
+in your system . when i want to update the billing information with this card
+number , i am getting the answer : credit card already in use . the card is in
+good standing and there is absolutely no problem with this card and there was
+never any problem . i don ' t understand why your system failed . i think that
+this is your problem , not mine .
+discover
+last 4 digits : 0057 .
+expiration : 05 / 02
+sincerely ,
+w . kaminski
+p . s . i have just called discover and was told the account is in pefect shape
+( as expected ) . as i have said , you must have a bug in your system ."
+YouTube Spam,DistilBERT,spam,ham,0.0125739686191082,false_negative,Yea stil the best WK song ever<br />Thumbs up of you think the same<br />﻿
+Enron Spam,TF-IDF + SVM,ham,spam,0.9511926868688032,false_positive,"Subject: another time ?  
+hey , i am back in olympia now . my friends wedding was sunday and i drove
+home last night . too bad i didn ' t have the better e - mail address . the
+wedding was really good , i tend to get cynical about such things but found
+myself enjoying it and even tearing up at times . i saw a lot of people i
+haven ' t seen since high school which was mostly good . it doesn ' t seem like
+that much changes , a bit of growing up but people are still the same .
+jennifer was one of the other bridesmaids , do you remember her ? i used to
+call her niffer . anyways , seeing her was especially good .
+are you still enginering ? ? ? ( smiles ) when you get a chance , let me know how
+you are .
+erin
+get your free download of msn explorer at http : / / explorer . msn . com"
+Enron Spam,TF-IDF + SVM,spam,ham,0.037173973012700076,false_negative,"Subject: thanks for your e - mail  
+thank you for contacting ceg .
+our help desk will forward your query to the appropriate department and you will receive our response very soon .
+regards ,
+ceg help desk"
+Enron Spam,TF-IDF + SVM,ham,spam,0.9688865137155451,false_positive,"Subject: virtual office suite from jobsonline . com  
+become a high flyer with jobsonline !
+jobsonline wants to help you move into the fast lane by giving away an entire
+virtual office . the internet ? s leading job site is giving away a laptop
+computer , a palm pilot , a cellular phone and a leather briefcase to one lucky
+person who registers with the site between now and the end of september ! when
+you register with jobsonline , not only will you be in with a chance to win
+these fabulous prizes , but you will also have access to their free job
+database .
+( if this hyperlink is not completely highlighted , please copy it to your
+browser . )
+jobsonline is one of the internet ' s leading sites for employment information
+and career resources . search their extensive database of job postings to make
+your next career move . and use the site ? s valuable career resources to assist
+you in your job search , or to succeed in your current position . even better ,
+it ? s all free .
+take one minute to register with jobsonline and you will automatically be
+entered in our virtual office giveaway .
+( if this hyperlink is not completely highlighted , please copy it to your
+browser . )
+you have received this email because you or someone using your email address
+agreed to receive special offers and promotions from enterprise marketing
+solutions and its web site partners .
+if you wish to be excluded from future offers please click on
+mailto : @ goemsi . com and type "" unsubscribe "" in the subject
+line and click ? send ? .
+as always , if you have questions or comments for us , please send them to
+mailto : @ goemsi . com
+if you wish to know more about our privacy policies please go to
+http : / / www . goemsi . com / privst . htm"
+YouTube Spam,DistilBERT,spam,ham,0.028127500787377357,false_negative,Nice song .See my new track.﻿
+Enron Spam,TF-IDF + SVM,ham,spam,0.883004462556135,false_positive,"Subject: enron capitalism  
+a primer on how to succeed in business :
+capitalism
+you have two cows . you sell one and buy a bull . your herd
+multiplies , and the economy grows . you sell them and retire on the
+income .
+enron capitalism
+you have two cows . you sell three of them to your publicly listed
+company , using letters of credit opened by your brother - in - law at
+the bank , then execute a debt / equity swap with an associated general
+offer so that you get all four cows back , with a tax exemption for
+five cows . the milk rights of the six cows are transferred via an
+intermediary to a cayman island company secretly owned by your cfo
+who sells the rights to all seven cows back to your listed company .
+the annual report says the company owns eight cows , with an option on
+six more ."
+YouTube Spam,DistilBERT,spam,ham,0.006028600502759218,false_negative,and how many subscribers compared to her over a million
+Enron Spam,TF-IDF + SVM,ham,spam,0.9424492022717699,false_positive,"Subject: software license  
+dear ms . feldman ,
+please receive all my apologies for not having
+answered earlier your 2 emails , but i was in the
+states for 6 weeks and could not access my
+dauphine email . in any case , the time was
+fruitfully used by my associates and myself to
+improve the "" robustness "" of the product , from
+a computer and mathematical standpoint .
+regarding your 3 points
+1 . we agree on the price of 90 , 000 usd
+2 . d - g will provide system support : we can do so
+by emailing anther version of the software , being
+available on the phone and by email but we
+cannot promise unlimited support of all kinds
+without risking bankruptcy right away .
+moreover , the $ 90 , 000 may be paid in 3 fractions
+and your risk would be quite minimal
+3 . regarding the escrow , we have been using so
+far a small law firm with 5 partners ( none of my
+family ) in amherst : hart , reed , brown , golowich
+and kaplan . but we are not closed to anther
+solution you would strongly prefer .
+best regards
+helyette geman , phd , phd
+d - g energy systems"
+Enron Spam,TF-IDF + SVM,ham,spam,0.9823336328599103,false_positive,"Subject: so . . . you were looking for a one night stand afterall . . . ? ?  
+dc"
+UCI SMS,BERT Base,ham,spam,0.9290380477905273,false_positive,Your bill at 3 is £33.65 so thats not bad!
+Enron Spam,TF-IDF + SVM,ham,spam,0.7969585905354315,false_positive,"Subject: president @ juno . com : exciting news - free internet access !  
+- - - - - - - - - begin forwarded message - - - - - - - - - -
+from : president @ juno . com
+to :
+subject : exciting news - free internet access !
+date : wed dec 22 16 : 30 : 24 est 1999
+message - id :
+dear juno member ,
+we have exciting news for you ! we have decided to expand our free basic
+service to include full web access . this means you can now use the world
+wide web completely free . no charges , no fees , no commitments . * this is
+not a free trial . it ' s free , period .
+what do you get with juno ' s completely free internet access service ?
+- access to everything the internet has to offer .
+- hundreds of access numbers across the country .
+- file attachment capability with your e - mail .
+- the juno guide , a floating banner directing you to some of the most
+interesting sites on the web .
+in order to start using the web for free , you need to have the latest
+version of our software , version 4 . 0 . this new version only takes about
+15 minutes to download ( with a 56 k modem ) .
+there are two ways for you to get the software :
+1 ) if you already have web access , you can download juno 4 . 0 at
+http : / / www . juno . com / junofree .
+2 ) if you don ' t have web access , click on the ' advertisements ' menu at
+the top of your screen and select ' index of advertisements ' from the menu
+that drops down . then select the juno 4 . 0 advertisement , and you ' ll be
+presented with a screen allowing you to download the software . it ' s that
+easy !
+hurry ! act now and get on the web , completely free .
+sincerely ,
+charles ardai
+president
+juno online services , inc .
+* as with your current service , local telephone charges may apply . please
+consult your local phone company if you have any questions about the
+access numbers you have chosen .
+- - - - - - - - - end forwarded message - - - - - - - - - -
+you ' re paying too much for the internet !
+juno now offers free internet access !
+try it today - there ' s no risk ! for your free software , visit :
+http : / / dl . www . juno . com / get / tagj ."
+Enron Spam,TF-IDF + SVM,spam,ham,0.25147475480907,false_negative,"Subject: 404 plan on wednesday at 12 - 00  
+do you have years of experlence
+and are being passed up for prom 0 tl 0 n ?
+ph # i - 2 o 6 - 35 o - 6 i 35
+rejected because of a special paper ?
+we can provide what you need - without any assignments !
+ph # i - 2 o 6 - 35 o - 6 i 35
+re - leeese # i - 2 o 6 - 35 o - 37 o 2"
+YouTube Spam,DistilBERT,ham,spam,0.9075666069984436,false_positive,"Hey I think I know what where dealing with here!!!! I have some theories of  how this could've gotten 2billion hits!! 1. This was mabey made in korea and its realy popular there so they were  stuck watching this over and over again. 2. Over 2billion people have access to the Internet, including youtube, and  the numbers are rising, by 2017 half of the populatoin will be connected. 3. Hackers In Korea may have loved it so much they rised it to 2billion  hits to make it more popular.  4. The song was featured in a just dance game, on multiple mp3s, and been  seen on concerts and even on new years eve event in 2012, so just by seeing  those you mabey adding more hits to this video. 5. You are complaining to much on how the heck this has 2b hits.﻿"
