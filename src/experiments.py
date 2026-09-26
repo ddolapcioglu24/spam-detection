@@ -1450,3 +1450,80 @@ def get_confusion_matrix_for_model(
         torch.cuda.empty_cache()
 
     return confusion_matrix
+
+def get_misclassified_messages_for_model(
+    test_df,
+    model_class,
+    model_dir,
+    dataset_name,
+    model_name,
+):
+    """
+    Return messages misclassified by one trained model.
+    """
+
+    # Load the trained model for the selected dataset.
+    checkpoint_path = get_model_checkpoint_path(
+        model_dir,
+        dataset_name,
+        model_name,
+    )
+
+    model = model_class()
+    model.load(checkpoint_path)
+
+    # Generate true labels, scores, and predicted labels.
+    y_true, y_score, y_pred = get_model_predictions(
+        model,
+        test_df,
+    )
+
+    mistakes = test_df.copy()
+
+    mistakes["true_label"] = np.where(
+        y_true == 1,
+        "spam",
+        "ham",
+    )
+
+    mistakes["predicted_label"] = np.where(
+        y_pred == 1,
+        "spam",
+        "ham",
+    )
+
+    mistakes["spam_score"] = y_score
+
+    # Keep only incorrectly classified messages.
+    mistakes = mistakes[
+        y_true != y_pred
+    ].copy()
+
+    mistakes["dataset"] = dataset_name
+    mistakes["model"] = model_name
+
+    mistakes["error_type"] = np.where(
+        mistakes["true_label"] == "ham",
+        "false_positive",
+        "false_negative",
+    )
+
+    mistakes = mistakes[
+        [
+            "dataset",
+            "model",
+            "true_label",
+            "predicted_label",
+            "spam_score",
+            "error_type",
+            "text",
+        ]
+    ].reset_index(drop=True)
+
+    # Release the loaded model after prediction.
+    del model
+
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    return mistakes
